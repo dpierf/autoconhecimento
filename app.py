@@ -39,16 +39,20 @@ st.set_page_config(
 
 @st.cache_resource(show_spinner="Carregando efemérides…")
 def _init_ephe():
-    ephe_dir = Path("ephe")
+    base_dir = Path(__file__).resolve().parent
+    ephe_dir = base_dir / "ephe"
+
     ephe_dir.mkdir(exist_ok=True)
+
     arquivos = ["seas_18.se1", "semo_18.se1", "sepl_18.se1"]
     base_url = "https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/"
+
     for arq in arquivos:
         dest = ephe_dir / arq
         if not dest.exists():
             urllib.request.urlretrieve(base_url + arq, dest)
-    swe.set_ephe_path(str(ephe_dir))
 
+    swe.set_ephe_path(str(ephe_dir))
 
 # ── Cidades (SimpleMaps worldcities.csv) ──────────────────────────────────────
 
