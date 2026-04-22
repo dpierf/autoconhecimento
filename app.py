@@ -1255,7 +1255,6 @@ def renderizar(nome_v, sobrenome_v, cidade_v, pais_v, dia, mes, ano, hrs, minuto
 
 def main():
     # Garante efemérides na inicialização
-    _init_ephe()
 
     st.markdown(
         """
