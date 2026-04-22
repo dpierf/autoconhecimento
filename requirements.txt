@@ -5,6 +5,6 @@ streamlit>=1.35.0
 pyswisseph>=2.10.3
 timezonefinder>=6.5.0
 pytz>=2024.1
-lunardate>=0.3.0
+lunardate>=0.2.0
 astral>=3.2
 pandas>=2.2.0
