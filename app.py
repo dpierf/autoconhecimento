@@ -30,6 +30,8 @@ st.write("BASE:", base_dir)
 st.write("FILES:", list(base_dir.iterdir()))
 st.write("PARENT FILES:", list(base_dir.parent.iterdir()))
 st.write("EPHE FILES:", list((base_dir / "ephe").glob("*")))
+st.write("EPHE PATH ATUAL:", swe.get_ephe_path())
+
 # ── Página ────────────────────────────────────────────────────────────────────
 
 st.set_page_config(
