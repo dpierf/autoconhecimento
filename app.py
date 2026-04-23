@@ -39,17 +39,22 @@ st.set_page_config(
 
 @st.cache_resource(show_spinner="Carregando efemérides…")
 def _init_ephe():
-    base_dir = Path(__file__).resolve().parent
+    from pathlib import Path
+    import swisseph as swe
 
-    # tenta pasta local primeiro
-    ephe_dir = base_dir / "ephe"
+    candidatos = [
+        Path(__file__).resolve().parent / "ephe",
+        Path(__file__).resolve().parent.parent / "ephe",
+        Path("/mount/src/ephe"),
+    ]
 
-    # fallback: sobe um nível
-    if not ephe_dir.exists():
-        ephe_dir = base_dir.parent / "ephe"
+    for path in candidatos:
+        if path.exists() and any(path.glob("*.se1")):
+            print("Ephe encontrado em:", path)
+            swe.set_ephe_path(str(path))
+            return
 
-    print("Usando ephe em:", ephe_dir)
-    swe.set_ephe_path(str(ephe_dir))
+    raise RuntimeError("Pasta ephe não encontrada em nenhum caminho esperado")
     
 _init_ephe()
 
