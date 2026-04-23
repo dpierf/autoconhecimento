@@ -1400,7 +1400,7 @@ def main():
         data_str = st.date_input(
             "Data de nascimento",
             value=None,
-            min_value=date(1900, 1, 1),
+            min_value=hoje(1900, 1, 1),
             max_value=hoje.today(),
             format="DD/MM/YYYY",
             help="Informe a data exatamente como aparece na certidão de nascimento.",
