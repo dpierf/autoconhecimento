@@ -29,7 +29,7 @@ base_dir = Path(__file__).resolve().parent
 st.write("BASE:", base_dir)
 st.write("FILES:", list(base_dir.iterdir()))
 st.write("PARENT FILES:", list(base_dir.parent.iterdir()))
-
+st.write("EPHE FILES:", list((base_dir / "ephe").glob("*")))
 # ── Página ────────────────────────────────────────────────────────────────────
 
 st.set_page_config(
