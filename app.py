@@ -1,8 +1,9 @@
 # ── app.py ────────────────────────────────────────────────────────────────────
 # Mapa de Autoconhecimento — versão Streamlit
 # Deploy: Streamlit Community Cloud
-# Geocodificação: SimpleMaps worldcities.csv (sem chamadas HTTP em runtime)
-# Efemérides: baixadas uma vez via cache_resource
+# Geocodificação: arquivo worldcities.csv
+# Efemérides: arquivos .se1 na pasta /ephe
+# Código desenvolvido em Python utilizando GenIA Claude
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Imports ───────────────────────────────────────────────────────────────────
@@ -61,6 +62,27 @@ def _load_cities() -> pd.DataFrame:
         usecols=["city_ascii", "country", "lat", "lng"],
         dtype={"city_ascii": str, "country": str, "lat": float, "lng": float},
     )
+
+# ── Auxiliares de país / cidade ───────────────────────────────────────────────
+ 
+@st.cache_data(show_spinner=False)
+def _get_countries() -> list[str]:
+    """Lista ordenada de países únicos do worldcities.csv."""
+    df = _load_cities()
+    return sorted(df["country"].dropna().unique().tolist())
+ 
+ 
+@st.cache_data(show_spinner=False)
+def _get_cities(country: str) -> list[str]:
+    """Lista ordenada de cidades de um país (campo city_ascii)."""
+    df = _load_cities()
+    return sorted(
+        df.loc[df["country"] == country, "city_ascii"]
+        .dropna()
+        .unique()
+        .tolist()
+    )
+
 
 
 # ── Estruturas de dados ───────────────────────────────────────────────────────
@@ -915,11 +937,13 @@ def _tabela_asp_html(lista, k1, k2, l1, l2, n=10):
         return (f'<div><p style="color:{cor};font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 8px 0;">{lb}</p>'
                 f'<table style="width:100%;border-collapse:collapse;">'
                 f'<tr style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:.05em;">'
-                f'<th style="text-align:left;padding:3px 8px;">{l1}</th><th style="text-align:left;padding:3px 8px;">{l2}</th>'
+                f'<th style="text-align:left;padding:3px 8px;">{l1}</th>'
+                f'<th style="text-align:left;padding:3px 8px;">{l2}</th>'
                 f'<th style="text-align:left;padding:3px 8px;">Aspecto</th>'
-                f'<th style="text-align:left;padding:3px 8px;">Orbe</th><th style="text-align:left;padding:3px 8px;">Peso</th></tr>'
+                f'<th style="text-align:left;padding:3px 8px;">Orbe</th>'
+                f'<th style="text-align:left;padding:3px 8px;">Peso</th></tr>'
                 f"{rows}</table></div>")
-    return f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">{_bloco("harmonioso","#7ecf8e")}{_bloco("tenso","#f88888")}</div>'
+    return f'<div class="grid-asp">{_bloco("harmonioso","#7ecf8e")}{_bloco("tenso","#f88888")}</div>'
 
 def _secao_asp(lista, titulo, k1="planeta1", k2="planeta2", l1="Planeta", l2="Planeta", mt="32px"):
     return f'<h2 style="{_h2(mt)}">{titulo}</h2>' + _tabela_asp_html(lista, k1, k2, l1, l2)
@@ -941,15 +965,18 @@ def _html_pc(pc):
     def _tabela(titulo, items, cor):
         rows = "".join(
             f'<tr><td style="padding:4px 8px;color:{cor};font-size:14px;font-weight:600;">{i["numero"]}</td>'
-            f'<td style="padding:4px 8px;color:#888;font-size:12px;">{i["periodo"]}</td></tr>' for i in items)
+            f'<td style="padding:4px 8px;color:#888;font-size:12px;">{i["periodo"]}</td></tr>'
+            for i in items)
         return (f'<div><p style="color:{cor};font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px 0;">{titulo}</p>'
                 f'<table style="width:100%;border-collapse:collapse;">'
                 f'<tr style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:.05em;">'
-                f'<th style="text-align:left;padding:4px 8px;">Nº</th><th style="text-align:left;padding:4px 8px;">Período (idade)</th></tr>'
+                f'<th style="text-align:left;padding:4px 8px;">Nº</th>'
+                f'<th style="text-align:left;padding:4px 8px;">Período (idade)</th></tr>'
                 f"{rows}</table></div>")
-    return (f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">'
-            + _tabela("Pínáculos", pc["pinnacles"],"#a8d8ea")
-            + _tabela("Desafios",  pc["challenges"],"#f8c47b") + "</div>")
+    return (f'<div class="grid-2" style="margin-top:8px;">'
+            + _tabela("Pínáculos", pc["pinnacles"], "#a8d8ea")
+            + _tabela("Desafios",  pc["challenges"], "#f8c47b")
+            + "</div>")
 
 def _html_partes(partes):
     if not partes: return '<p style="color:#555;font-size:12px;">Não calculado</p>'
@@ -1009,32 +1036,43 @@ def _bio_chart_svg(bio, cycles, titulo):
 
 def _html_bio(bio):
     def _bar(label, val, critico):
-        pct  = min(abs(val)*100, 100)
-        cor  = "#f8d56b" if critico else ("#7ecf8e" if val >= 0 else "#f88888")
-        lbl  = f"{label}{'  ⚠' if critico else ''}"
-        side = "left:50%" if val >= 0 else "right:50%"
-        rad  = "0 3px 3px 0" if val >= 0 else "3px 0 0 3px"
-        return (f'<div style="display:flex;align-items:center;gap:8px;margin:3px 0;">'
-                f'<span style="width:140px;font-size:12px;color:{"#f8d56b" if critico else "#aaa"};text-align:right;flex-shrink:0;">{lbl}</span>'
-                f'<div style="width:220px;background:#111;border-radius:3px;height:10px;position:relative;flex-shrink:0;overflow:hidden;">'
-                f'<div style="position:absolute;{side};width:{pct:.1f}%;height:10px;background:{cor};border-radius:{rad};"></div>'
-                f'<div style="position:absolute;left:50%;width:1px;height:10px;background:#2a2a2a;"></div></div>'
-                f'<span style="font-size:11px;color:#666;width:52px;">{val:+.3f}</span></div>')
+        pct   = min(abs(val)*100, 100)
+        cor   = "#f8d56b" if critico else ("#7ecf8e" if val >= 0 else "#f88888")
+        lbl   = f"{label}{'  ⚠' if critico else ''}"
+        side  = "left:50%" if val >= 0 else "right:50%"
+        rad   = "0 3px 3px 0" if val >= 0 else "3px 0 0 3px"
+        lbl_color = "#f8d56b" if critico else "#aaa"
+        return (
+            f'<div class="bio-row">'
+            f'<span class="bio-label" style="color:{lbl_color};">{lbl}</span>'
+            f'<div class="bio-track">'
+            f'  <div style="position:absolute;{side};width:{pct:.1f}%;height:10px;background:{cor};border-radius:{rad};"></div>'
+            f'  <div style="position:absolute;left:50%;width:1px;height:10px;background:#2a2a2a;"></div>'
+            f'</div>'
+            f'<span class="bio-val">{val:+.3f}</span>'
+            f'</div>'
+        )
+ 
     primarios   = ["Físico","Emocional","Intelectual","Intuitivo"]
     secundarios = ["Estético","Consciência","Espiritual"]
+ 
     header  = f'<p style="font-size:12px;color:#555;margin:0 0 10px 0;">Referência: {bio["data"]} ({bio["dias"]:,} dias de vida)</p>'
     bloco_p = ('<p style="font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px 0;">Primários</p>'
-               + "".join(_bar(f"{k} ({p}d)", bio[k]["valor"], bio[k]["critico"]) for k,p in zip(primarios,[23,28,33,38])))
+               + "".join(_bar(f"{k} ({p}d)", bio[k]["valor"], bio[k]["critico"])
+                         for k, p in zip(primarios, [23,28,33,38])))
     divisor = '<div style="border-top:1px solid #1e1e1e;margin:10px 0 8px 0;"></div>'
     bloco_s = ('<p style="font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px 0;">Secundários</p>'
-               + "".join(_bar(f"{k} ({p}d)", bio[k]["valor"], bio[k]["critico"]) for k,p in zip(secundarios,[43,48,53])))
-    barras = bloco_p + divisor + bloco_s
-    graficos = (f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
+               + "".join(_bar(f"{k} ({p}d)", bio[k]["valor"], bio[k]["critico"])
+                         for k, p in zip(secundarios, [43,48,53])))
+ 
+    barras   = bloco_p + divisor + bloco_s
+    graficos = (f'<div class="grid-asp">'
                 + _bio_chart_svg(bio, primarios,   "PRIMÁRIOS")
                 + _bio_chart_svg(bio, secundarios, "SECUNDÁRIOS")
                 + "</div>")
+ 
     return (header
-            + f'<div style="display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:start;">'
+            + f'<div class="grid-bio">'
             + f"<div>{barras}</div>"
             + f"<div>{graficos}</div>"
             + "</div>")
@@ -1075,24 +1113,26 @@ def _html_nakshatra(nak):
 
 def _html_energia_dia(ed):
     p = ed["pilar_dia"]
-    return (f'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;font-size:13px;">'
-            f'<div>'
-            f'<p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 8px 0;">Numerologia</p>'
-            f'<p style="margin:3px 0;"><strong>Dia Universal:</strong> {ed["dia_universal"]}</p>'
-            f'<p style="margin:3px 0;"><strong>Dia Pessoal:</strong> {ed["dia_pessoal"]}</p>'
-            f'<p style="margin:3px 0;"><strong>Arcano do Dia:</strong> {ed["arcano"]} ({arcanos[ed["arcano"]]})</p>'
-            f"</div>"
-            f"<div>"
-            f'<p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 8px 0;">Astrologia</p>'
-            f'<p style="margin:3px 0;"><strong>Lua em:</strong> {ed["lua_signo"]} {ed["lua_grau"]}</p>'
-            f'<p style="margin:3px 0;color:#888;font-size:12px;">Transita pela Casa {ed["lua_casa"]} natal</p>'
-            f"</div>"
-            f"<div>"
-            f'<p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 8px 0;">Ba Zi · Runas</p>'
-            f'<p style="margin:3px 0;"><strong>Pilar do Dia:</strong> {p["tronco"]} {p["ramo"]} ({p["animal"]})</p>'
-            f'<p style="margin:3px 0;"><strong>Runa do Dia:</strong> {ed["runa"]}</p>'
-            f"</div>"
-            f"</div>")
+    return (
+        f'<div class="grid-3-sm" style="font-size:13px;">'
+        f'<div>'
+        f'<p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 8px 0;">Numerologia</p>'
+        f'<p style="margin:3px 0;"><strong>Dia Universal:</strong> {ed["dia_universal"]}</p>'
+        f'<p style="margin:3px 0;"><strong>Dia Pessoal:</strong> {ed["dia_pessoal"]}</p>'
+        f'<p style="margin:3px 0;"><strong>Arcano do Dia:</strong> {ed["arcano"]} ({arcanos[ed["arcano"]]})</p>'
+        f'</div>'
+        f'<div>'
+        f'<p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 8px 0;">Astrologia</p>'
+        f'<p style="margin:3px 0;"><strong>Lua em:</strong> {ed["lua_signo"]} {ed["lua_grau"]}</p>'
+        f'<p style="margin:3px 0;color:#888;font-size:12px;">Transita pela Casa {ed["lua_casa"]} natal</p>'
+        f'</div>'
+        f'<div>'
+        f'<p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 8px 0;">Ba Zi · Runas</p>'
+        f'<p style="margin:3px 0;"><strong>Pilar do Dia:</strong> {p["tronco"]} {p["ramo"]} ({p["animal"]})</p>'
+        f'<p style="margin:3px 0;"><strong>Runa do Dia:</strong> {ed["runa"]}</p>'
+        f'</div>'
+        f'</div>'
+    )
 
 def _html_tarot_cards(raw):
     items = [("Data", raw["data"]), ("Nome", raw["nome"]), ("Alma", raw["alma"]), ("Ano", raw["ano"])]
@@ -1137,25 +1177,27 @@ def _html_runa_pedras(raw):
 
 
 def renderizar(nome_v, sobrenome_v, cidade_v, pais_v, dia, mes, ano, hrs, minuto):
-    r     = autoconhecimento(nome_v, sobrenome_v, cidade_v, pais_v, dia, mes, ano, hrs, minuto)
-    assin = r["assinaturas"]
-    sz    = r["astrologia"]["sizigia"]
-    aspin = r["astrologia"]["aspectos_internos"]
-    trans = r["transitos"]
-    qp    = r["quatro_pilares"]
-    jones = r["astrologia"]["jones"]
-    partes= r["astrologia"]["partes"]
-    stell = r["astrologia"]["stellium"]
-    pc    = r["pinnacles"]
-    bio   = r["biorritmo"]
-    ic    = r["iching"]
-    nak   = r["nakshatra"]
-    ed    = r["energia_do_dia"]
-
-    centralidade_html = ("<ul style='margin:8px 0 0 0;padding-left:18px;line-height:1.8;'>"
-        + "".join(f"<li><strong>{p}</strong>: {v:.3f}</li>" for p,v in assin["Centralidade de Aspectos"].items())
+    r      = autoconhecimento(nome_v, sobrenome_v, cidade_v, pais_v, dia, mes, ano, hrs, minuto)
+    assin  = r["assinaturas"]
+    sz     = r["astrologia"]["sizigia"]
+    aspin  = r["astrologia"]["aspectos_internos"]
+    trans  = r["transitos"]
+    qp     = r["quatro_pilares"]
+    jones  = r["astrologia"]["jones"]
+    partes = r["astrologia"]["partes"]
+    stell  = r["astrologia"]["stellium"]
+    pc     = r["pinnacles"]
+    bio    = r["biorritmo"]
+    ic     = r["iching"]
+    nak    = r["nakshatra"]
+    ed     = r["energia_do_dia"]
+ 
+    centralidade_html = (
+        "<ul style='margin:8px 0 0 0;padding-left:18px;line-height:1.8;'>"
+        + "".join(f"<li><strong>{p}</strong>: {v:.3f}</li>"
+                  for p, v in assin["Centralidade de Aspectos"].items())
         + "</ul>")
-
+ 
     assinaturas_html = (
         f'<p><strong>Elemento Dominante:</strong> {assin["Elemento Dominante"]}</p>'
         f'<p><strong>Modalidade Dominante:</strong> {assin["Modalidade Dominante"]}</p>'
@@ -1165,41 +1207,94 @@ def renderizar(nome_v, sobrenome_v, cidade_v, pais_v, dia, mes, ano, hrs, minuto
         f'<p><strong>Distribuição de Modalidades:</strong> {_fmt_dist(assin["Distribuição de Modalidades"])}</p>'
         f"<h4 style='margin:12px 0 4px 0;font-size:12px;color:#555;text-transform:uppercase;letter-spacing:.05em;'>⭕ Centralidade de Aspectos</h4>"
         + centralidade_html)
-
-    planetas_h = "".join(f'<p style="margin:3px 0;">{l}</p>' for l in r["astrologia"]["planetas"].split("\n") if l.strip())
-    angulos_h  = "".join(f'<p style="margin:3px 0;">{l}</p>' for l in r["astrologia"]["angulos"].split("\n")  if l.strip())
-
+ 
+    planetas_h = "".join(f'<p style="margin:3px 0;">{l}</p>'
+                         for l in r["astrologia"]["planetas"].split("\n") if l.strip())
+    angulos_h  = "".join(f'<p style="margin:3px 0;">{l}</p>'
+                         for l in r["astrologia"]["angulos"].split("\n")  if l.strip())
+ 
     stell_html = ""
     if stell:
         items = " · ".join(
             f'<strong>{s["local"]}</strong>: {", ".join(s["planetas"][:5])}{"…" if len(s["planetas"])>5 else ""}'
             for s in stell)
         stell_html = f'<p style="margin-top:10px;font-size:12px;color:#f8d56b;">★ Stellium — {items}</p>'
-
-    sz_html = (f'<p style="margin-top:12px;font-size:12px;color:#a8d8ea;">⟐ Sizígia: <strong>{sz["tipo"]}</strong>'
-               f'<br><span style="color:#555;font-size:11px;">{sz["data"]} — Lua em {sz["signo"]} {sz["grau"]}</span></p>')
-    jones_html = (f'<p style="margin-top:12px;font-size:12px;color:#a8d8ea;">◈ Padrão de Jones: <strong>{jones["padrao"]}</strong>'
-                  + (f' — alça: {jones["handle"]}' if jones.get("handle") else "")
-                  + f'<br><span style="color:#555;font-size:11px;">{jones["descricao"]}</span></p>')
-
-    # Wrap completo com fundo escuro + fonte Google importada
+ 
+    sz_html = (
+        f'<p style="margin-top:12px;font-size:12px;color:#a8d8ea;">⟐ Sizígia: <strong>{sz["tipo"]}</strong>'
+        f'<br><span style="color:#555;font-size:11px;">{sz["data"]} — Lua em {sz["signo"]} {sz["grau"]}</span></p>')
+    jones_html = (
+        f'<p style="margin-top:12px;font-size:12px;color:#a8d8ea;">◈ Padrão de Jones: <strong>{jones["padrao"]}</strong>'
+        + (f' — alça: {jones["handle"]}' if jones.get("handle") else "")
+        + f'<br><span style="color:#555;font-size:11px;">{jones["descricao"]}</span></p>')
+ 
+    # ── CSS responsivo ────────────────────────────────────────────────────────
+    # Breakpoints:
+    #   > 900 px  → 3 colunas (desktop)
+    #   601–900 px → 2 colunas (tablet)
+    #   ≤ 600 px  → 1 coluna  (celular)
+    css = """
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 0; background: #0f0f0f; }
+      p { margin: 4px 0; }
+ 
+      /* ── Grids ── */
+      .grid-main  { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 32px; }
+      .grid-asp   { display: grid; grid-template-columns: 1fr 1fr;     gap: 32px; }
+      .grid-2     { display: grid; grid-template-columns: 1fr 1fr;     gap: 16px; }
+      .grid-3-sm  { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; font-size: 13px; }
+      .grid-bio   { display: grid; grid-template-columns: auto 1fr;    gap: 24px; align-items: start; }
+ 
+      /* ── Biorritmo ── */
+      .bio-row   { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+      .bio-label { width: 140px; font-size: 12px; text-align: right; flex-shrink: 0; }
+      .bio-track { width: 220px; background: #111; border-radius: 3px; height: 10px;
+                   position: relative; flex-shrink: 0; overflow: hidden; }
+      .bio-val   { font-size: 11px; color: #666; width: 52px; flex-shrink: 0; }
+ 
+      /* ── Tablet (601 – 900 px) ── */
+      @media (max-width: 900px) {
+        .grid-main { grid-template-columns: 1fr 1fr; }
+        .grid-bio  { grid-template-columns: 1fr; }
+        .bio-track { width: 160px; }
+      }
+ 
+      /* ── Celular (≤ 600 px) ── */
+      @media (max-width: 600px) {
+        .grid-main  { grid-template-columns: 1fr; }
+        .grid-asp   { grid-template-columns: 1fr; gap: 20px; }
+        .grid-2     { grid-template-columns: 1fr; }
+        .grid-3-sm  { grid-template-columns: 1fr; }
+        .grid-bio   { grid-template-columns: 1fr; }
+ 
+        .bio-label  { width: auto; flex: 0 0 38%; text-align: left; font-size: 11px; }
+        .bio-track  { flex: 1; width: auto; }
+        .bio-val    { display: none; }   /* economiza espaço no celular */
+ 
+        /* tabelas de aspectos: oculta colunas menos essenciais */
+        table th:nth-child(4), table td:nth-child(4),
+        table th:nth-child(5), table td:nth-child(5) { display: none; }
+ 
+        /* padding menor no container geral */
+        .wrap { padding: 16px !important; border-radius: 0 !important; }
+      }
+    </style>
+    """
+ 
     return f"""<!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-<style>
-  * {{ box-sizing: border-box; }}
-  body {{ margin: 0; padding: 0; background: #0f0f0f; }}
-  p {{ margin: 4px 0; }}
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{css}
 </head>
 <body>
-<div style="font-family:'Inter',sans-serif;background:#0f0f0f;color:#e8e8e8;border-radius:12px;padding:32px;">
+<div class="wrap" style="font-family:'Inter',sans-serif;background:#0f0f0f;color:#e8e8e8;border-radius:12px;padding:32px;">
     <h1 style="margin:0 0 24px 0;font-size:22px;font-weight:600;">🔮 Mapa de Autoconhecimento</h1>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;">
+ 
+    <div class="grid-main">
         <div>
             <h2 style="{_h2()}">📍 Dados Gerais</h2>
             <div style="line-height:1.7;font-size:14px;">{negrito(r["geral"])}</div>
@@ -1236,13 +1331,19 @@ def renderizar(nome_v, sobrenome_v, cidade_v, pais_v, dia, mes, ano, hrs, minuto
             {_html_runa_pedras(r["runas_raw"])}
         </div>
     </div>
-
-    <h2 style="{_h2("32px")}">🌅 Energia do Dia <span style="font-weight:300;color:#555;font-size:12px;text-transform:none;letter-spacing:0;">({ed["data"]})</span></h2>
+ 
+    <h2 style="{_h2("32px")}">🌅 Energia do Dia
+      <span style="font-weight:300;color:#555;font-size:12px;text-transform:none;letter-spacing:0;">
+        ({ed["data"]})
+      </span>
+    </h2>
     {_html_energia_dia(ed)}
-
-    {_secao_asp(aspin,"⚡ Aspectos Internos do Natal")}
-    {_secao_asp(trans["aspectos"],f'🌐 Trânsitos Atuais ({trans["data_referencia"]})',k1="transitante",k2="natal",l1="Transitante",l2="Natal")}
-
+ 
+    {_secao_asp(aspin, "⚡ Aspectos Internos do Natal")}
+    {_secao_asp(trans["aspectos"],
+               f'🌐 Trânsitos Atuais ({trans["data_referencia"]})',
+               k1="transitante", k2="natal", l1="Transitante", l2="Natal")}
+ 
     <h2 style="{_h2("32px")}">💫 Biorritmos</h2>
     {_html_bio(bio)}
 </div>
@@ -1253,12 +1354,11 @@ def renderizar(nome_v, sobrenome_v, cidade_v, pais_v, dia, mes, ano, hrs, minuto
 # ── Interface Streamlit ───────────────────────────────────────────────────────
 
 def main():
-    # Garante efemérides na inicialização
-
+ 
     st.markdown(
         """
         <style>
-            max-width: 100% !important;
+        max-width: 100% !important;
         .block-container {
             padding-top: 1rem;
             padding-left: 2rem;
@@ -1268,45 +1368,85 @@ def main():
         """,
         unsafe_allow_html=True,
     )
-
+ 
     st.title("🔮 Mapa de Autoconhecimento")
-    st.caption(
-        "Preencha os dados de nascimento. "
-        "Nomes de cidades em inglês conforme o banco SimpleMaps "
-        "(ex: *Sao Paulo*, *Rio de Janeiro*, *London*, *New York City*)."
-    )
 
+ 
+    # ── Seleção de localização FORA do form ───────────────────────────────────
+
+    st.markdown("#### 🌍 Local de nascimento")
+    loc_col1, loc_col2 = st.columns(2)
+ 
+    with loc_col1:
+        countries = _get_countries()
+        pais = st.selectbox(
+            "País de nascimento",
+            options=countries,
+            index=None,
+            placeholder="Digite ou selecione…",
+            key="pais_select",
+        )
+ 
+    with loc_col2:
+        if pais:
+            cities = _get_cities(pais)
+            cidade = st.selectbox(
+                "Cidade de nascimento",
+                options=cities,
+                index=None,
+                placeholder="Digite ou selecione…",
+                key="cidade_select",
+            )
+        else:
+            st.selectbox(
+                "Cidade de nascimento",
+                options=[],
+                disabled=True,
+                placeholder="Selecione o país primeiro",
+                key="cidade_select_disabled",
+            )
+            cidade = None
+ 
+    st.divider()
+ 
+    # ── Dados pessoais DENTRO do form ─────────────────────────────────────────
+ 
+    st.markdown("#### 👤 Dados pessoais")
     with st.form("dados_nascimento"):
         col1, col2 = st.columns(2)
         with col1:
-            nome      = st.text_input("Nomes próprios", placeholder="ex: Maria Clara")
-            sobrenome = st.text_input("Sobrenomes ao nascer", placeholder="ex: Silva Pereira")
-            data_str  = st.text_input("Data de nascimento (DD/MM/AAAA)", placeholder="15/03/1990")
-            hora_str  = st.text_input("Hora de nascimento (HH:MM)", placeholder="14:30")
+            nome      = st.text_input("Nomes próprios",            placeholder="ex: Maria Clara")
+            sobrenome = st.text_input("Sobrenomes ao nascer",      placeholder="ex: Silva Pereira")
         with col2:
-            cidade = st.text_input("Cidade de nascimento", placeholder="Sao Paulo")
-            pais   = st.text_input("País de nascimento", placeholder="Brazil")
-
-        submitted = st.form_submit_button("✨ Gerar Mapa", type="primary", use_container_width=True)
-
+            data_str  = st.text_input("Data de nascimento (DD/MM/AAAA)", placeholder="15/03/1990")
+            hora_str  = st.text_input("Hora de nascimento (HH:MM)",      placeholder="14:30")
+ 
+        submitted = st.form_submit_button(
+            "✨ Gerar Mapa", type="primary", use_container_width=True
+        )
+ 
+    # ── Processamento ─────────────────────────────────────────────────────────
+ 
     if submitted:
-        # Validação básica
         erros = []
-        if not nome.strip():        erros.append("Informe os nomes próprios.")
-        if not sobrenome.strip():   erros.append("Informe os sobrenomes.")
-        if not cidade.strip():      erros.append("Informe a cidade.")
-        if not pais.strip():        erros.append("Informe o país.")
+ 
+        if not nome.strip():      erros.append("Informe os nomes próprios.")
+        if not sobrenome.strip(): erros.append("Informe os sobrenomes.")
+        if not pais:              erros.append("Selecione o país de nascimento.")
+        if not cidade:            erros.append("Selecione a cidade de nascimento.")
+ 
         try:
             dia, mes, ano = map(int, data_str.strip().split("/"))
         except Exception:
             erros.append("Data inválida. Use o formato DD/MM/AAAA.")
             dia = mes = ano = None
+ 
         try:
             hrs, minuto = map(int, hora_str.strip().split(":"))
         except Exception:
             erros.append("Hora inválida. Use o formato HH:MM.")
             hrs = minuto = None
-
+ 
         if erros:
             for e in erros:
                 st.error(e)
@@ -1315,17 +1455,17 @@ def main():
                 try:
                     html = renderizar(
                         nome.strip(), sobrenome.strip(),
-                        cidade.strip(), pais.strip(),
+                        cidade, pais,
                         dia, mes, ano, hrs, minuto,
                     )
-                    components.html(html, height = 2400, scrolling=True)
+                    components.html(html, height=3200, scrolling=True)
                 except ValueError as ve:
                     st.error(str(ve))
                 except Exception:
                     import traceback
                     st.error("Ocorreu um erro inesperado:")
                     st.code(traceback.format_exc())
-
-
+ 
+ 
 if __name__ == "__main__":
     main()
