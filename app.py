@@ -1353,7 +1353,7 @@ def renderizar(nome_v, sobrenome_v, cidade_v, pais_v, dia, mes, ano, hrs, minuto
 
 # ── Interface Streamlit ───────────────────────────────────────────────────────
 
-def main():
+def main(): 
     st.markdown(
         """
         <style>
@@ -1370,66 +1370,59 @@ def main():
  
     st.title("🔮 Mapa de Autoconhecimento")
  
-    # ── 1. Dados pessoais (dentro do form) ────────────────────────────────────
+    # ── 1. Dados pessoais ─────────────────────────────────────────────────────
  
     st.markdown("#### 👤 Dados pessoais")
-    with st.form("dados_nascimento"):
-        col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2)
  
-        with col1:
-            nome = st.text_input(
-                "Nomes próprios",
-                placeholder="ex: Maria Clara",
-                help=(
+    with col1:
+        nome = st.text_input(
+            "Nomes próprios",
+            placeholder="ex: Maria Clara",
+            help=(
                     "Insira os nomes próprios constantes na sua certidão de nascimento. "
                     "Se você se identifica com outros nomes hoje, pode utilizá-los, "
                     "sem abreviações. Os cálculos vão refletir quem você é agora."
-                ),
-            )
-            sobrenome = st.text_input(
-                "Sobrenomes ao nascer",
-                placeholder="ex: Silva Pereira",
-                help=(
+            ),
+        )
+
+        sobrenome = st.text_input(
+            "Sobrenomes ao nascer",
+            placeholder="ex: Silva Pereira",
+            help=(
                     "Use os sobrenomes com os quais você se identifica. Se você adotou "
                     "novos sobrenomes após transição ou mudança de nome, pode usá-los aqui. "
                     "Não use sobrenomes contraídos após casamento."
-                ),
-            )
+            ),
+        )
  
-        with col2:
-            data_str = st.text_input(
-                "Data de nascimento (DD/MM/AAAA)",
-                placeholder="18/06/1992",
-                help="Informe a data exatamente como aparece na certidão de nascimento.",
-            )
-            hora_str = st.text_input(
-                "Hora de nascimento (HH:MM)",
-                placeholder="14:53",
-                help=(
-                    "Use o horário registrado na certidão de nascimento, "
-                    "sem nenhuma correção de fuso ou horário de verão — "
-                    "o sistema faz os ajustes automaticamente."
-                ),
-            )
- 
-        submitted = st.form_submit_button(
-            "✨ Gerar Mapa", type="primary", use_container_width=True
+    with col2:
+        data_str = st.text_input(
+            "Data de nascimento (DD/MM/AAAA)",
+            placeholder="18/06/1992",
+            help="Informe a data exatamente como aparece na certidão de nascimento.",
+        )
+        hora_str = st.text_input(
+            "Hora de nascimento (HH:MM)",
+            placeholder="14:53",
+            help=(
+                "Use o horário registrado na certidão de nascimento, "
+                "sem nenhuma correção de fuso ou horário de verão — "
+                "o sistema faz os ajustes automaticamente."
+            ),
         )
  
     st.divider()
  
-    # ── 2. Local de nascimento (fora do form) ─────────────────────────────────
-    # Fica fora para que a troca de país dispare um rerun e filtre as cidades
-    # antes de o usuário clicar em "Gerar Mapa".
+    # ── 2. Local de nascimento ────────────────────────────────────────────────
  
     st.markdown("#### 🌍 Local de nascimento")
     loc_col1, loc_col2 = st.columns(2)
  
     with loc_col1:
-        countries = _get_countries()
         pais = st.selectbox(
             "País de nascimento",
-            options=countries,
+            options=_get_countries(),
             index=None,
             placeholder="Digite ou selecione…",
             key="pais_select",
@@ -1438,16 +1431,16 @@ def main():
  
     with loc_col2:
         if pais:
-            cities = _get_cities(pais)
             cidade = st.selectbox(
                 "Cidade de nascimento",
-                options=cities,
+                options=_get_cities(pais),
                 index=None,
                 placeholder="Digite ou selecione…",
                 key="cidade_select",
                 help=(
                     "Selecione a cidade registrada na sua certidão. "
-                    "Se sua cidade não aparecer, escolha a mais próxima ou a sede do município."
+                    "Se sua cidade não aparecer, escolha a mais próxima "
+                    "ou a sede do município."
                 ),
             )
         else:
@@ -1461,11 +1454,13 @@ def main():
             )
             cidade = None
  
-    # ── 3. Processamento ──────────────────────────────────────────────────────
+    st.divider()
  
-    if submitted:
+    # ── 3. Botão — fica depois de tudo ───────────────────────────────────────
+ 
+    if st.button("✨ Gerar Mapa", type="primary", use_container_width=True):
+ 
         erros = []
- 
         if not nome.strip():      erros.append("Informe os nomes próprios.")
         if not sobrenome.strip(): erros.append("Informe os sobrenomes.")
         if not pais:              erros.append("Selecione o país de nascimento.")
@@ -1486,21 +1481,28 @@ def main():
         if erros:
             for e in erros:
                 st.error(e)
+            st.session_state.pop("mapa_html", None)   # limpa resultado anterior
         else:
             with st.spinner("Calculando seu mapa…"):
                 try:
-                    html = renderizar(
+                    st.session_state["mapa_html"] = renderizar(
                         nome.strip(), sobrenome.strip(),
                         cidade, pais,
                         dia, mes, ano, hrs, minuto,
                     )
-                    components.html(html, height=3200, scrolling=True)
                 except ValueError as ve:
                     st.error(str(ve))
+                    st.session_state.pop("mapa_html", None)
                 except Exception:
                     import traceback
                     st.error("Ocorreu um erro inesperado:")
                     st.code(traceback.format_exc())
+                    st.session_state.pop("mapa_html", None)
+ 
+    # ── 4. Resultado — persiste entre reruns via session_state ────────────────
+ 
+    if "mapa_html" in st.session_state:
+        components.html(st.session_state["mapa_html"], height=3200, scrolling=True)
  
  
 if __name__ == "__main__":
