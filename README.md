@@ -95,8 +95,9 @@ Os resultados não têm caráter preditivo, diagnóstico ou terapêutico.
 
 © Pier Francesco De Maria, 2026. Todos os direitos reservados.
 
-Este repositório é público para fins de transparência e portfólio.  
-O código **não pode ser copiado, modificado, redistribuído ou utilizado** em outros projetos sem autorização expressa do autor.
+Este repositório é público para fins de transparência e portfólio. O código **não pode ser copiado, modificado, redistribuído ou utilizado** em outros projetos sem autorização expressa do autor.
+
+Contato: dpierf@gmail.com
 
 ---
 
