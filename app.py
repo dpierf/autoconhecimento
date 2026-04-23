@@ -1471,17 +1471,17 @@ def main():
         if not pais:              erros.append("Selecione o país de nascimento.")
         if not cidade:            erros.append("Selecione a cidade de nascimento.")
  
-        if data_nasc is None:
+        if data_str is None:
             erros.append("Informe a data de nascimento.")
             dia = mes = ano = None
         else:
-            dia, mes, ano = data_nasc.day, data_nasc.month, data_nasc.year
+            dia, mes, ano = data_str.day, data_str.month, data_str.year
         
-        if hora_nasc is None:
+        if hora_str is None:
             erros.append("Informe a hora de nascimento.")
             hrs = minuto = None
         else:
-            hrs, minuto = hora_nasc.hour, hora_nasc.minute
+            hrs, minuto = hora_str.hour, hora_str.minute
  
         if erros:
             for e in erros:
