@@ -1406,7 +1406,7 @@ def main():
             help="Informe a data exatamente como aparece na certidão de nascimento.",
         )
 
-        hora_nasc = st.time_input(
+        hora_str = st.time_input(
             "Hora de nascimento",
             value=None,
             step=60,
