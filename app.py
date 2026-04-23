@@ -1213,13 +1213,18 @@ def renderizar(nome_v, sobrenome_v, cidade_v, pais_v, dia, mes, ano, hrs, minuto
     angulos_h  = "".join(f'<p style="margin:3px 0;">{l}</p>'
                          for l in r["astrologia"]["angulos"].split("\n")  if l.strip())
  
-    stell_html = ""
     if stell:
-        items = " · ".join(
-            f'<strong>{s["local"]}</strong>: {", ".join(s["planetas"][:5])}{"…" if len(s["planetas"])>5 else ""}'
+        itens_html = "".join(
+            f'<li><strong>{s["local"]}</strong>: {", ".join(s["planetas"][:5])}{"…" if len(s["planetas"])>5 else ""}</li>'
             for s in stell)
-        stell_html = f'<p style="margin-top:10px;font-size:12px;color:#f8d56b;">★ Stellium — {items}</p>'
- 
+        stell_html = (
+            f'<p style="margin-top:10px;font-size:12px;color:#f8d56b;">★ Stellium:</p>'
+            f'<ul style="margin:4px 0 0 0;padding-left:18px;font-size:12px;color:#f8d56b;line-height:1.8;">'
+            f'{itens_html}</ul>'
+        )
+    else:
+        stell_html = '<p style="margin-top:10px;font-size:12px;color:#555;">★ Stellium: nenhum</p>' 
+        
     sz_html = (
         f'<p style="margin-top:12px;font-size:12px;color:#a8d8ea;">⟐ Sizígia: <strong>{sz["tipo"]}</strong>'
         f'<br><span style="color:#555;font-size:11px;">{sz["data"]} — Lua em {sz["signo"]} {sz["grau"]}</span></p>')
