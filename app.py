@@ -25,13 +25,6 @@ from astral.sun import sun
 from lunardate import LunarDate
 from timezonefinder import TimezoneFinder
 
-base_dir = Path(__file__).resolve().parent
-st.write("BASE:", base_dir)
-st.write("FILES:", list(base_dir.iterdir()))
-st.write("PARENT FILES:", list(base_dir.parent.iterdir()))
-st.write("EPHE FILES:", list((base_dir / "ephe").glob("*")))
-st.write("EPHE PATH ATUAL:", swe.get_ephe_path())
-
 # ── Página ────────────────────────────────────────────────────────────────────
 
 st.set_page_config(
@@ -43,25 +36,11 @@ st.set_page_config(
 
 # ── Efemérides (baixa uma vez, fica em cache pelo tempo de vida do processo) ──
 
-@st.cache_resource(show_spinner="Carregando efemérides…")
 def _init_ephe():
-    from pathlib import Path
-    import swisseph as swe
+    base_dir = Path(__file__).resolve().parent
+    ephe_dir = base_dir / "ephe"
+    swe.set_ephe_path(str(ephe_dir))
 
-    candidatos = [
-        Path(__file__).resolve().parent / "ephe",
-        Path(__file__).resolve().parent.parent / "ephe",
-        Path("/mount/src/ephe"),
-    ]
-
-    for path in candidatos:
-        if path.exists() and any(path.glob("*.se1")):
-            print("Ephe encontrado em:", path)
-            swe.set_ephe_path(str(path))
-            return
-
-    raise RuntimeError("Pasta ephe não encontrada em nenhum caminho esperado")
-    
 _init_ephe()
 
 # ── Cidades (SimpleMaps worldcities.csv) ──────────────────────────────────────
