@@ -1260,9 +1260,9 @@ def main():
         <style>
             max-width: 100% !important;
         .block-container {
-            padding-top: 2rem;
-            padding-left: 3rem;
-            padding-right: 3rem;
+            padding-top: 1rem;
+            padding-left: 2rem;
+            padding-right: 2rem;
         }
         </style>
         """,
