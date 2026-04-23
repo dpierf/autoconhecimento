@@ -1471,17 +1471,17 @@ def main():
         if not pais:              erros.append("Selecione o país de nascimento.")
         if not cidade:            erros.append("Selecione a cidade de nascimento.")
  
-        try:
-            dia, mes, ano = map(int, data_str.strip().split("/"))
-        except Exception:
-            erros.append("Data inválida. Use o formato DD/MM/AAAA.")
+        if data_nasc is None:
+            erros.append("Informe a data de nascimento.")
             dia = mes = ano = None
- 
-        try:
-            hrs, minuto = map(int, hora_str.strip().split(":"))
-        except Exception:
-            erros.append("Hora inválida. Use o formato HH:MM.")
+        else:
+            dia, mes, ano = data_nasc.day, data_nasc.month, data_nasc.year
+        
+        if hora_nasc is None:
+            erros.append("Informe a hora de nascimento.")
             hrs = minuto = None
+        else:
+            hrs, minuto = hora_nasc.hour, hora_nasc.minute
  
         if erros:
             for e in erros:
