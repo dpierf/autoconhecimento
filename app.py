@@ -1318,7 +1318,7 @@ def main():
                         cidade.strip(), pais.strip(),
                         dia, mes, ano, hrs, minuto,
                     )
-                    components.html(html, height = 600, scrolling=True)
+                    components.html(html, height = 1500, scrolling=True)
                 except ValueError as ve:
                     st.error(str(ve))
                 except Exception:
