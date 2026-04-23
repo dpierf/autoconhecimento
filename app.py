@@ -1411,16 +1411,26 @@ def main():
             help="Informe a data exatamente como aparece na certidão de nascimento.",
         )
 
-        hora_str = st.time_input(
-            "Hora de nascimento",
-            value=None,
-            step=60,
-            help=(
-                "Use o horário registrado na certidão de nascimento, "
-                "sem nenhuma correção de fuso ou horário de verão — "
-                "o sistema faz os ajustes automaticamente."
-            ),
-        )
+        col_h, col_m = st.columns(2)
+        with col_h:
+            hora_nasc = st.selectbox(
+                "Hora de nascimento",
+                options=list(range(24)),
+                index=12,
+                format_func=lambda h: f"{h:02d}h",
+                help=(
+                    "Use o horário registrado na certidão de nascimento, "
+                    "sem nenhuma correção de fuso ou horário de verão "
+                    "(o sistema faz os ajustes automaticamente)."
+                ),
+            )
+        with col_m:
+            minuto_nasc = st.selectbox(
+                "Minuto",
+                options=list(range(60)),
+                index=0,
+                format_func=lambda m: f"{m:02d}min",
+            )
  
     st.divider()
  
@@ -1482,11 +1492,7 @@ def main():
         else:
             dia, mes, ano = data_str.day, data_str.month, data_str.year
         
-        if hora_str is None:
-            erros.append("Informe a hora de nascimento.")
-            hrs = minuto = None
-        else:
-            hrs, minuto = hora_str.hour, hora_str.minute
+        hrs, minuto = hora_nasc, minuto_nasc
  
         if erros:
             for e in erros:
