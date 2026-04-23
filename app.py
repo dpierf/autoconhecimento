@@ -40,14 +40,13 @@ st.set_page_config(
 @st.cache_resource(show_spinner="Carregando efemérides…")
 def _init_ephe():
     base_dir = Path(__file__).resolve().parent
+
+    # tenta pasta local primeiro
     ephe_dir = base_dir / "ephe"
 
+    # fallback: sobe um nível
     if not ephe_dir.exists():
-        raise RuntimeError(f"Pasta ephe não encontrada: {ephe_dir}")
-
-    arquivos = list(ephe_dir.glob("*.se1"))
-    if not arquivos:
-        raise RuntimeError(f"Nenhum arquivo .se1 encontrado em: {ephe_dir}")
+        ephe_dir = base_dir.parent / "ephe"
 
     print("Usando ephe em:", ephe_dir)
     swe.set_ephe_path(str(ephe_dir))
