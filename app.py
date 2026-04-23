@@ -26,10 +26,9 @@ from lunardate import LunarDate
 from timezonefinder import TimezoneFinder
 
 base_dir = Path(__file__).resolve().parent
-print("BASE:", base_dir)
-print("FILES:", list(base_dir.iterdir()))
-print("PARENT FILES:", list(base_dir.parent.iterdir()))
-
+st.write("BASE:", base_dir)
+st.write("FILES:", list(base_dir.iterdir()))
+st.write("PARENT FILES:", list(base_dir.parent.iterdir()))
 
 # ── Página ────────────────────────────────────────────────────────────────────
 
