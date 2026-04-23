@@ -41,8 +41,17 @@ st.set_page_config(
 def _init_ephe():
     base_dir = Path(__file__).resolve().parent
     ephe_dir = base_dir / "ephe"
-    swe.set_ephe_path(str(ephe_dir))
 
+    if not ephe_dir.exists():
+        raise RuntimeError(f"Pasta ephe não encontrada: {ephe_dir}")
+
+    arquivos = list(ephe_dir.glob("*.se1"))
+    if not arquivos:
+        raise RuntimeError(f"Nenhum arquivo .se1 encontrado em: {ephe_dir}")
+
+    print("Usando ephe em:", ephe_dir)
+    swe.set_ephe_path(str(ephe_dir))
+    
 _init_ephe()
 
 # ── Cidades (SimpleMaps worldcities.csv) ──────────────────────────────────────
