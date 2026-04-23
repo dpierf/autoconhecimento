@@ -1322,12 +1322,12 @@ def renderizar(nome_v, sobrenome_v, cidade_v, pais_v, dia, mes, ano, hrs, minuto
             <div style="line-height:1.8;font-size:14px;">{angulos_h}</div>
             <h2 style="{_h2("20px")}">⚜️ Partes Árabes</h2>
             <div style="line-height:1.7;font-size:14px;">{_html_partes(partes)}</div>
-            <h2 style="{_h2("24px")}">🌙 Nakshatra</h2>
-            <div style="line-height:1.6;font-size:14px;">{_html_nakshatra(nak)}</div>
         </div>
         <div>
             <h2 style="{_h2()}">🧬 Assinaturas</h2>
             <div style="line-height:1.6;font-size:14px;">{assinaturas_html}</div>
+            <h2 style="{_h2("24px")}">🌙 Nakshatra</h2>
+            <div style="line-height:1.6;font-size:14px;">{_html_nakshatra(nak)}</div>
             <h2 style="{_h2("24px")}">🃏 Tarot</h2>
             <div style="line-height:1.7;font-size:14px;">{negrito(r["tarot"])}</div>
             {_html_tarot_cards(r["tarot_raw"])}
