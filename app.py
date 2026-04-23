@@ -1387,7 +1387,7 @@ def main():
         )
 
         sobrenome = st.text_input(
-            "Sobrenomes ao nascer",
+            "Sobrenomes",
             placeholder="ex: Silva Pereira",
             help=(
                     "Use os sobrenomes com os quais você se identifica. Se você adotou "
@@ -1397,14 +1397,19 @@ def main():
         )
  
     with col2:
-        data_str = st.text_input(
-            "Data de nascimento (DD/MM/AAAA)",
-            placeholder="18/06/1992",
+        data_str = st.date_input(
+            "Data de nascimento",
+            value=None,
+            min_value=date(1900, 1, 1),
+            max_value=hoje.today(),
+            format="DD/MM/YYYY",
             help="Informe a data exatamente como aparece na certidão de nascimento.",
         )
-        hora_str = st.text_input(
-            "Hora de nascimento (HH:MM)",
-            placeholder="14:53",
+
+        hora_nasc = st.time_input(
+            "Hora de nascimento",
+            value=None,
+            step=60,
             help=(
                 "Use o horário registrado na certidão de nascimento, "
                 "sem nenhuma correção de fuso ou horário de verão — "
