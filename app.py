@@ -30,7 +30,7 @@ from timezonefinder import TimezoneFinder
 st.set_page_config(
     page_title="Mapa de Autoconhecimento",
     page_icon="🔮",
-    layout="central",
+    layout="wide",
     initial_sidebar_state="expanded"
 )
 
@@ -1318,8 +1318,7 @@ def main():
                         cidade.strip(), pais.strip(),
                         dia, mes, ano, hrs, minuto,
                     )
-                    # height estimado; ajuste se necessário
-                    components.html(html, height=5800, scrolling=True)
+                    components.html(html, scrolling=True)
                 except ValueError as ve:
                     st.error(str(ve))
                 except Exception:
