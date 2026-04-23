@@ -1354,7 +1354,6 @@ def renderizar(nome_v, sobrenome_v, cidade_v, pais_v, dia, mes, ano, hrs, minuto
 # ── Interface Streamlit ───────────────────────────────────────────────────────
 
 def main():
- 
     st.markdown(
         """
         <style>
@@ -1370,10 +1369,59 @@ def main():
     )
  
     st.title("🔮 Mapa de Autoconhecimento")
-
  
-    # ── Seleção de localização FORA do form ───────────────────────────────────
-
+    # ── 1. Dados pessoais (dentro do form) ────────────────────────────────────
+ 
+    st.markdown("#### 👤 Dados pessoais")
+    with st.form("dados_nascimento"):
+        col1, col2 = st.columns(2)
+ 
+        with col1:
+            nome = st.text_input(
+                "Nomes próprios",
+                placeholder="ex: Maria Clara",
+                help=(
+                    "Insira os nomes próprios constantes na sua certidão de nascimento. "
+                    "Se você se identifica com outros nomes hoje, pode utilizá-los, "
+                    "sem abreviações. Os cálculos vão refletir quem você é agora."
+                ),
+            )
+            sobrenome = st.text_input(
+                "Sobrenomes ao nascer",
+                placeholder="ex: Silva Pereira",
+                help=(
+                    "Use os sobrenomes com os quais você se identifica. Se você adotou "
+                    "novos sobrenomes após transição ou mudança de nome, pode usá-los aqui. "
+                    "Não use sobrenomes contraídos após casamento."
+                ),
+            )
+ 
+        with col2:
+            data_str = st.text_input(
+                "Data de nascimento (DD/MM/AAAA)",
+                placeholder="18/06/1992",
+                help="Informe a data exatamente como aparece na certidão de nascimento.",
+            )
+            hora_str = st.text_input(
+                "Hora de nascimento (HH:MM)",
+                placeholder="14:53",
+                help=(
+                    "Use o horário registrado na certidão de nascimento, "
+                    "sem nenhuma correção de fuso ou horário de verão — "
+                    "o sistema faz os ajustes automaticamente."
+                ),
+            )
+ 
+        submitted = st.form_submit_button(
+            "✨ Gerar Mapa", type="primary", use_container_width=True
+        )
+ 
+    st.divider()
+ 
+    # ── 2. Local de nascimento (fora do form) ─────────────────────────────────
+    # Fica fora para que a troca de país dispare um rerun e filtre as cidades
+    # antes de o usuário clicar em "Gerar Mapa".
+ 
     st.markdown("#### 🌍 Local de nascimento")
     loc_col1, loc_col2 = st.columns(2)
  
@@ -1385,6 +1433,7 @@ def main():
             index=None,
             placeholder="Digite ou selecione…",
             key="pais_select",
+            help="Selecione o país onde você nasceu. Você pode digitar para filtrar a lista.",
         )
  
     with loc_col2:
@@ -1396,6 +1445,10 @@ def main():
                 index=None,
                 placeholder="Digite ou selecione…",
                 key="cidade_select",
+                help=(
+                    "Selecione a cidade registrada na sua certidão. "
+                    "Se sua cidade não aparecer, escolha a mais próxima ou a sede do município."
+                ),
             )
         else:
             st.selectbox(
@@ -1404,28 +1457,11 @@ def main():
                 disabled=True,
                 placeholder="Selecione o país primeiro",
                 key="cidade_select_disabled",
+                help="Primeiro selecione o país para habilitar esta lista.",
             )
             cidade = None
  
-    st.divider()
- 
-    # ── Dados pessoais DENTRO do form ─────────────────────────────────────────
- 
-    st.markdown("#### 👤 Dados pessoais")
-    with st.form("dados_nascimento"):
-        col1, col2 = st.columns(2)
-        with col1:
-            nome      = st.text_input("Nomes próprios",            placeholder="ex: Maria Clara")
-            sobrenome = st.text_input("Sobrenomes ao nascer",      placeholder="ex: Silva Pereira")
-        with col2:
-            data_str  = st.text_input("Data de nascimento (DD/MM/AAAA)", placeholder="15/03/1990")
-            hora_str  = st.text_input("Hora de nascimento (HH:MM)",      placeholder="14:30")
- 
-        submitted = st.form_submit_button(
-            "✨ Gerar Mapa", type="primary", use_container_width=True
-        )
- 
-    # ── Processamento ─────────────────────────────────────────────────────────
+    # ── 3. Processamento ──────────────────────────────────────────────────────
  
     if submitted:
         erros = []
