@@ -1258,7 +1258,12 @@ def main():
     st.markdown(
         """
         <style>
-        .block-container { max-width: 760px; padding-top: 2rem; }
+            max-width: 100% !important;
+        .block-container {
+            padding-top: 2rem;
+            padding-left: 3rem;
+            padding-right: 3rem;
+        }
         </style>
         """,
         unsafe_allow_html=True,
